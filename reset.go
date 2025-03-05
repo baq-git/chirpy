@@ -1,22 +1,16 @@
 package main
 
-import (
-	"fmt"
-	"net/http"
-)
+import "net/http"
 
 func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
-	// if cfg.PLATFORM != "dev" {
-	// 	responseWithError(w, http.StatusForbidden, "This endpoint is only available in development environment", nil)
-	// 	return
-	// }
-	err := cfg.db.DeleteAllUsers(r.Context())
-	if err != nil {
-		responseWithError(w, http.StatusInternalServerError, "Failed to reset database", nil)
+	if cfg.platform != "dev" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Reset is only allowed in dev environment."))
 		return
 	}
+
 	cfg.fileserverHits.Store(0)
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	cfg.db.Reset(r.Context())
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits.Load())
+	w.Write([]byte("Hits reset to 0 and database reset to initial state."))
 }
